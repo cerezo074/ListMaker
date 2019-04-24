@@ -1,5 +1,6 @@
 package com.example.android.aprentice.elichigo
 
+import android.content.Intent
 import android.os.Bundle
 import android.support.design.widget.Snackbar
 import android.support.v7.app.AlertDialog
@@ -11,7 +12,7 @@ import android.widget.EditText
 
 import kotlinx.android.synthetic.main.activity_main.*
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), ListSelectionRecyclerViewAdapter.ListSelectionRecyclerViewClickListener {
 
     lateinit var listsRecyclerView: RecyclerView
     val listDataManager: ListDataManager = ListDataManager(this)
@@ -24,9 +25,9 @@ class MainActivity : AppCompatActivity() {
         val lists = ListDataManager(this)
         listsRecyclerView = findViewById<RecyclerView>(R.id.lists_recycler_view)
         listsRecyclerView.layoutManager = LinearLayoutManager(this)
-        listsRecyclerView.adapter = ListSelectionRecyclerViewAdapter(lists.readLists())
+        listsRecyclerView.adapter = ListSelectionRecyclerViewAdapter(lists.readLists(), this)
 
-        fab.setOnClickListener { view ->
+        fab.setOnClickListener {
            showCreateListDialog()
         }
     }
@@ -42,7 +43,7 @@ class MainActivity : AppCompatActivity() {
         builder.setTitle(dialogTitle)
         builder.setView(listTitleEditText)
 
-        builder.setPositiveButton(positiveButtonTitle, { dialog, i ->
+        builder.setPositiveButton(positiveButtonTitle)  { dialog, _ ->
             val list = TaskList(listTitleEditText.text.toString())
             listDataManager.saveList(list)
 
@@ -50,9 +51,24 @@ class MainActivity : AppCompatActivity() {
             recyclerAdapter.addList(list)
 
             dialog.dismiss()
-        })
+            showListDetail(list)
+        }
 
         builder.create().show()
+    }
+
+    private fun showListDetail(list: TaskList) {
+        val listDetailIntent = Intent(this, ListDetailActivity::class.java)
+        listDetailIntent.putExtra(INTENT_LIST_KEY, list)
+        startActivity(listDetailIntent)
+    }
+
+    override fun listItemClicked(list: TaskList) {
+        showListDetail(list)
+    }
+
+    companion object {
+        const val INTENT_LIST_KEY = "list"
     }
 
 }
