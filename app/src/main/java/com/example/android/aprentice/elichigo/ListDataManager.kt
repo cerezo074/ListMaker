@@ -3,7 +3,7 @@ package com.example.android.aprentice.elichigo
 import android.content.Context
 import android.preference.PreferenceManager
 
-class ListDataManager(val context: Context) {
+class ListDataManager(private val context: Context) {
 
     fun saveList(list: TaskList) {
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context).edit()

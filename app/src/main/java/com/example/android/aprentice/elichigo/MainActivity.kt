@@ -60,15 +60,32 @@ class MainActivity : AppCompatActivity(), ListSelectionRecyclerViewAdapter.ListS
     private fun showListDetail(list: TaskList) {
         val listDetailIntent = Intent(this, ListDetailActivity::class.java)
         listDetailIntent.putExtra(INTENT_LIST_KEY, list)
-        startActivity(listDetailIntent)
+        startActivityForResult(listDetailIntent, LIST_DETAIL_REQUEST_CODE)
+    }
+
+    private fun updateList() {
+        val list = listDataManager.readLists()
+        listsRecyclerView.adapter = ListSelectionRecyclerViewAdapter(list, this)
     }
 
     override fun listItemClicked(list: TaskList) {
         showListDetail(list)
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == LIST_DETAIL_REQUEST_CODE) {
+            data?.let {
+                listDataManager.saveList(it.getParcelableExtra(INTENT_LIST_KEY))
+                updateList()
+            }
+        }
+    }
+
     companion object {
         const val INTENT_LIST_KEY = "list"
+        const val LIST_DETAIL_REQUEST_CODE = 20
     }
 
 }
