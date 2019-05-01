@@ -14,21 +14,21 @@ class MainActivity : AppCompatActivity(), ListSelectionFragment.OnListItemFragme
 
     private var listSelectionFragment: ListSelectionFragment = ListSelectionFragment.newInstance()
     private var fragmentContainer: FrameLayout? = null
+    private var largeScreen = false
+    private var listFragment: ListDetailFragment? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
 
-        fab.setOnClickListener {
-           showCreateListDialog()
-        }
-
+        listSelectionFragment = supportFragmentManager.findFragmentById(R.id.list_selection_fragment) as ListSelectionFragment
         fragmentContainer = findViewById(R.id.fragment_container)
-        supportFragmentManager
-            .beginTransaction()
-            .add(R.id.fragment_container, listSelectionFragment)
-            .commit()
+        largeScreen = fragmentContainer != null
+
+        fab.setOnClickListener {
+            showCreateListDialog()
+        }
     }
 
     private fun showCreateListDialog() {
@@ -54,9 +54,43 @@ class MainActivity : AppCompatActivity(), ListSelectionFragment.OnListItemFragme
     }
 
     private fun showListDetail(list: TaskList) {
-        val listDetailIntent = Intent(this, ListDetailActivity::class.java)
-        listDetailIntent.putExtra(INTENT_LIST_KEY, list)
-        startActivityForResult(listDetailIntent, LIST_DETAIL_REQUEST_CODE)
+        if (!largeScreen) {
+            val listDetailIntent = Intent(this, ListDetailActivity::class.java)
+            listDetailIntent.putExtra(INTENT_LIST_KEY, list)
+            startActivityForResult(listDetailIntent, LIST_DETAIL_REQUEST_CODE)
+        } else {
+            removeDetailFragment()
+
+            title = list.name
+            val listFragment = ListDetailFragment.newInstance(list)
+            supportFragmentManager
+                .beginTransaction()
+                .replace(R.id.fragment_container, listFragment, getString(R.string.list_fragment_tag))
+                .addToBackStack(null)
+                .commit()
+
+            this.listFragment = listFragment
+
+            fab.setOnClickListener { view ->
+                showCreateTaskDialog()
+            }
+        }
+    }
+
+    private fun showCreateTaskDialog() {
+        val taskEditText = EditText(this)
+        taskEditText.inputType = InputType.TYPE_CLASS_TEXT
+
+        AlertDialog.Builder(this)
+            .setTitle(R.string.task_to_add)
+            .setView(taskEditText)
+            .setPositiveButton(R.string.add_task) { dialog, _ ->
+                val task = taskEditText.text.toString()
+                listFragment?.addTask(task)
+                dialog.dismiss()
+            }
+            .create()
+            .show()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -67,6 +101,31 @@ class MainActivity : AppCompatActivity(), ListSelectionFragment.OnListItemFragme
                 listSelectionFragment.saveList(data.getParcelableExtra<TaskList>(INTENT_LIST_KEY))
             }
         }
+    }
+
+    override fun onBackPressed() {
+        super.onBackPressed()
+        title = resources.getString(R.string.app_name)
+        listFragment?.list.let {
+            val list = it ?: return
+            listSelectionFragment.listDataManager.saveList(list)
+        }
+
+        removeDetailFragment()
+
+        fab.setOnClickListener { view ->
+            showCreateListDialog()
+        }
+    }
+
+    private fun removeDetailFragment() {
+        val listFragment = listFragment ?: return
+        supportFragmentManager
+            .beginTransaction()
+            .remove(listFragment)
+            .commit()
+
+        this.listFragment = null
     }
 
     override fun onListItemClicked(list: TaskList) {
